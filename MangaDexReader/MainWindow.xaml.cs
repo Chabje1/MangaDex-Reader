@@ -61,7 +61,7 @@ namespace MangaDexReader
             }
             else
             {
-                search.Replace(' ', '+');
+                search = HttpUtility.UrlEncode(search);
                 webRequest = WebRequest.Create(ConfigurationManager.AppSettings.Get("API_URL") + "manga?title="+search+"&limit=" + maxperpage.ToString() + "&offset=" + (maxperpage * listPage).ToString()) as HttpWebRequest;
             }
             if(webRequest == null)

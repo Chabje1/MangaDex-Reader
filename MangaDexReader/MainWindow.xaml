@@ -9,9 +9,9 @@
         Title="Mangadex Reader" MinHeight="617.256" MinWidth="852.823" Width="852.823" KeyDown="MetroWindow_KeyDown">
     <DockPanel LastChildFill="True">
         <Border DockPanel.Dock="Right">
-            <DockPanel Width="285">
+            <DockPanel Width="279">
                 <GroupBox Header="Current Manga List" DockPanel.Dock="Top" MinHeight="350" Width="279">
-                    <DockPanel HorizontalAlignment="Left" Width="270">
+                    <DockPanel HorizontalAlignment="Left" Width="269">
                         <DockPanel DockPanel.Dock="Top">
                             <Label Width="50" DockPanel.Dock="Left">Search:</Label>
                             <TextBox Name="SearchBox" Height="6" TextWrapping="Wrap" Text="" DockPanel.Dock="Right"/>
