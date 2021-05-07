@@ -1,0 +1,53 @@
+﻿<mah:MetroWindow x:Class="MangaDexReader.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:mah="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
+        xmlns:local="clr-namespace:MangaDexReader"
+        mc:Ignorable="d"
+        Title="Mangadex Reader" MinHeight="617.256" MinWidth="852.823" Width="852.823" KeyDown="MetroWindow_KeyDown">
+    <DockPanel LastChildFill="True">
+        <Border DockPanel.Dock="Right">
+            <DockPanel Width="285">
+                <GroupBox Header="Current Manga List" DockPanel.Dock="Top" MinHeight="350" Width="279">
+                    <DockPanel HorizontalAlignment="Left" Width="270">
+                        <DockPanel DockPanel.Dock="Top">
+                            <Label Width="50" DockPanel.Dock="Left">Search:</Label>
+                            <TextBox Name="SearchBox" Height="6" TextWrapping="Wrap" Text="" DockPanel.Dock="Right"/>
+                        </DockPanel>
+                        <DockPanel DockPanel.Dock="Top">
+                            <Button Content="Prev" DockPanel.Dock="Left" Click="PrevSearchButton_Click"/>
+                            <Button Content="Next" DockPanel.Dock="Right" Click="NextSearchButton_Click"/>
+                            <Label Name="MangaListPageCounter" Content="0/0" DockPanel.Dock="Left" HorizontalContentAlignment="Center"/>
+                        </DockPanel>
+                        <ListBox DockPanel.Dock="Bottom" x:Name="CurrentMangaListBox"  Margin="2,5,2,0" SelectionChanged="CurrentMangaListBox_SelectionChanged" BorderThickness="1"/>
+                    </DockPanel>
+                </GroupBox>
+                <GroupBox Header="Current Manga" DockPanel.Dock="Bottom" Width="279">
+                    <DockPanel HorizontalAlignment="Left" Margin="10,0,0,0" VerticalAlignment="Top" Width="253">
+                        <Label x:Name="CurrentMangaTitle" Content="Title (En): " DockPanel.Dock="Top" Height="26" Margin="8,0,0,0" Width="235"/>
+                        <DockPanel DockPanel.Dock="Top">
+                            <Button Content="Prev" DockPanel.Dock="Left" Click="PrevChapterPageButton_Click"/>
+                            <Button Content="Next" DockPanel.Dock="Right" Click="NextChapterPageButton_Click"/>
+                            <Label Name="CurrentMangaChapterCounter" Content="0/0" DockPanel.Dock="Left" HorizontalContentAlignment="Center"/>
+                        </DockPanel>
+                        <ListBox x:Name="CurrentChaptersListBox" DockPanel.Dock="Bottom" Margin="15,0,5,0" Width="233" SelectionChanged="CurrentChaptersListBox_SelectionChanged" ScrollViewer.HorizontalScrollBarVisibility="Disabled"/>
+                    </DockPanel>
+                </GroupBox>
+            </DockPanel>
+        </Border>
+        <Border DockPanel.Dock="Left">
+            <DockPanel>
+                <Border DockPanel.Dock="Bottom">
+                    <Grid Height="28" Width="226">
+                        <Button Content="Next" HorizontalAlignment="Left" Height="19" VerticalAlignment="Top" Width="40" RenderTransformOrigin="-0.12,1.59" Click="NextPage_Click"/>
+                        <Button Content="Prev" HorizontalAlignment="Left" Height="19" Margin="183,0,0,0" VerticalAlignment="Top" Width="40" RenderTransformOrigin="-0.12,1.59" Click="PrevPage_Click"/>
+                        <Label x:Name="MaxPageCounter" Content="0/0" HorizontalAlignment="Left" Height="24" Margin="96,0,0,0" VerticalAlignment="Top" Width="48" RenderTransformOrigin="0.564,0.364"/>
+                    </Grid>
+                </Border>
+                <Image x:Name="PageViewer" DockPanel.Dock="Top" Stretch="Uniform"/>
+            </DockPanel>
+        </Border>
+    </DockPanel>
+</mah:MetroWindow>
