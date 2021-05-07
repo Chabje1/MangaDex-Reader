@@ -5,6 +5,7 @@ using System.Configuration;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Web;
 using System.Windows;
 using Newtonsoft.Json;
 using System.Windows.Controls;
@@ -99,6 +100,7 @@ namespace MangaDexReader
                 manga.data.attributes.title.TryGetValue("en", out bufout);
                 if (bufout != null)
                 {
+                    bufout = WebUtility.HtmlDecode(bufout);
                     CurrentMangaListBox.Items.Add(bufout);
                 }
             }
@@ -132,13 +134,14 @@ namespace MangaDexReader
                 {
                     if (chapter.data.attributes.title != "")
                     {
+                        string title = WebUtility.HtmlDecode(chapter.data.attributes.title);
                         if (chapter.data.attributes.chapter != "")
                         {
-                            CurrentChaptersListBox.Items.Add(String.Format("Chapter {0}: {1}", new string[] { chapter.data.attributes.chapter, chapter.data.attributes.title }));
+                            CurrentChaptersListBox.Items.Add(String.Format("Chapter {0}: {1}", new string[] { chapter.data.attributes.chapter,  title}));
                         }
                         else
                         {
-                            CurrentChaptersListBox.Items.Add(chapter.data.attributes.title);
+                            CurrentChaptersListBox.Items.Add(title);
                         }
                     }
                     else
