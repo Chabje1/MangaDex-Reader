@@ -5,8 +5,26 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:mah="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
         xmlns:local="clr-namespace:MangaDexReader"
-        mc:Ignorable="d"
-        Title="Mangadex Reader" MinHeight="617.256" MinWidth="852.823" Width="852.823" KeyDown="MetroWindow_KeyDown">
+                 xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
+                 mc:Ignorable="d"
+        Title="Mangadex Reader" MinHeight="617.256" MinWidth="852.823" Width="852.823" KeyDown="MetroWindow_KeyDown" Closed="MainWindow_Closed">
+
+    <mah:MetroWindow.LeftWindowCommands>
+        <mah:WindowCommands>
+            <Button Click="ThemeButton_Click">
+                <iconPacks:PackIconBoxIcons Name="ThemeIcon" Width="22"
+                                  Height="22"
+                                  Kind="SolidMoon" />
+            </Button>
+        </mah:WindowCommands>
+    </mah:MetroWindow.LeftWindowCommands>
+
+    <mah:MetroWindow.RightWindowCommands>
+        <mah:WindowCommands>
+            <Button Name="GetUserFeedButton" Click="GetUserFeedButton_Click" Content="Get Feed" Visibility="Hidden"/>
+            <Button Name="LoginButton" Click="LoginButton_Click" Content="Login"/>
+        </mah:WindowCommands>
+    </mah:MetroWindow.RightWindowCommands>
     <DockPanel LastChildFill="True">
         <Border DockPanel.Dock="Right">
             <DockPanel Width="279">
@@ -32,7 +50,7 @@
                             <Button Content="Next" DockPanel.Dock="Right" Click="NextChapterPageButton_Click"/>
                             <Label Name="CurrentMangaChapterCounter" Content="0/0" DockPanel.Dock="Left" HorizontalContentAlignment="Center"/>
                         </DockPanel>
-                        <ListBox x:Name="CurrentChaptersListBox" DockPanel.Dock="Bottom" Margin="15,0,5,0" Width="233" SelectionChanged="CurrentChaptersListBox_SelectionChanged" ScrollViewer.HorizontalScrollBarVisibility="Disabled"/>
+                        <ListBox x:Name="CurrentChaptersListBox" DockPanel.Dock="Bottom" Margin="15,0,5,0" Width="233" SelectionChanged="CurrentChaptersListBox_SelectionChanged"/>
                     </DockPanel>
                 </GroupBox>
             </DockPanel>

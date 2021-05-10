@@ -8,7 +8,7 @@ namespace MangaDexReader.ResponseClasses
 {
     public class Responses
     {
-        public Response[] results;
+        public List<Response> results;
         public int limit;
         public int offset;
         public int total;
@@ -29,7 +29,7 @@ namespace MangaDexReader.ResponseClasses
 
     public class MangaResponses : Responses
     {
-        public new MangaResponse[] results;
+        public new List<MangaResponse> results;
     }
 
     public class MangaResponse : Response
@@ -39,7 +39,7 @@ namespace MangaDexReader.ResponseClasses
 
     public class ChapterResponses : Responses
     {
-        public new ChapterResponse[] results;
+        public new List<ChapterResponse> results;
     }
 
     public class ChapterResponse : Response
