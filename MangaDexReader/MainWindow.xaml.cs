@@ -53,11 +53,13 @@ namespace MangaDexReader
     /// </summary>
     public partial class MainWindow : MetroWindow
     {
-        public MangaResponses currentList;
+        public List<MangaResponse> currentMangaList;
         public Manga currentManga;
-        public ChapterResponses currentChapters;
+        public List<ChapterResponse> currentChapters;
         public Chapter currentChapter;
+
         public MDATHOME_RESPONSE currentATHOME;
+
         public int currentPage = 0;
         public int maxperpage = 10;
         public int listPage = 0;
@@ -67,72 +69,94 @@ namespace MangaDexReader
         public int currentChapterPage = 0;
         public int NumberOfPagesChapters = 0;
 
+        public List<BitmapImage> pageList;
+
         public bool isLoggedIn = false;
         public bool isUserFeed = false;
         public bool isJWTokenExpired = true;
         public JWToken currentToken = null;
-        public LoginWindow child;
+        public LoginWindow loginChild;
         public Timer JWTokenTimer = new Timer(15 * 60 * 1000);
-        public Timer RefreshTokenTimer = new Timer(4*60*60*1000);
+        public Timer RefreshTokenTimer = new Timer(4 * 60 * 60 * 1000);
 
         public bool DarkLight = false;
+
+        public ProgressWindow progressWindow;
 
         public MainWindow()
         {
             InitializeComponent();
-            GetMangaList("");
-            child = new LoginWindow(this);
+            loginChild = new LoginWindow(this);
+            progressWindow = new ProgressWindow();
             RefreshTokenTimer.Elapsed += new ElapsedEventHandler(RefreshToken_Elasped);
             JWTokenTimer.Elapsed += new ElapsedEventHandler(TokenExpired_Elasped);
         }
 
         public void GetMangaList(string search)
         {
-            HttpWebRequest webRequest;
             isUserFeed = false;
+            currentMangaList = new List<MangaResponse>();
+
+            int limit = 100;
+
+            int total = limit;
+            int current = 0;
+
+            string reqQuery;
+            MangaResponses mangaResponses;
+            HttpWebRequest webRequest;
             if (search == "")
             {
-                webRequest = WebRequest.CreateHttp(ConfigurationManager.AppSettings.Get("API_URL") + "manga?limit=" + maxperpage.ToString() + "&offset=" + (maxperpage * listPage).ToString());
+                reqQuery = ConfigurationManager.AppSettings.Get("API_URL") + String.Format("manga?limit={0}&offset={1}", limit, current);
             }
             else
             {
                 search = HttpUtility.UrlEncode(search);
-                webRequest = WebRequest.CreateHttp(ConfigurationManager.AppSettings.Get("API_URL") + "manga?title="+search+"&limit=" + maxperpage.ToString() + "&offset=" + (maxperpage * listPage).ToString());
+                reqQuery = ConfigurationManager.AppSettings.Get("API_URL") + String.Format("manga?title={0}&limit={1}&offset={2}", search, limit, current);
             }
-            if(webRequest == null)
+            while (current < total)
             {
-                return;
-            }
-
-            webRequest.ContentType = "application/json";
-            webRequest.UserAgent = "Nothing";
-
-            using (var s = webRequest.GetResponse().GetResponseStream())
-            {
-                using (var sr = new StreamReader(s))
+                webRequest = WebRequest.CreateHttp(reqQuery);
+                if (webRequest == null)
                 {
-                    var responseJSON = sr.ReadToEnd();
-                    currentList = JsonConvert.DeserializeObject<MangaResponses>(responseJSON);
+                    return;
                 }
+                webRequest.ContentType = "application/json";
+                webRequest.UserAgent = "Nothing";
+                
+                using (Stream s = webRequest.GetResponse().GetResponseStream())
+                {
+                    using (StreamReader sr = new StreamReader(s))
+                    {
+                        string responseJSON = sr.ReadToEnd();
+                        mangaResponses = JsonConvert.DeserializeObject<MangaResponses>(responseJSON);
+                    }
+                }
+
+                currentMangaList.AddRange(mangaResponses.results);
+
+                total = mangaResponses.total;
+                current += (limit < total - current) ? limit : (total - current);
+                this.Invoke(() => UpdateBar(current, total));
+                System.Threading.Thread.Sleep(100);
             }
-            UpdateListUI();
+            this.Invoke(EndOfGet);
         }
 
         public void UpdateListUI()
         {
             CurrentMangaListBox.Items.Clear();
-            if (currentList == null)
+            if (currentMangaList == null)
             {
                 MangaListPageCounter.Content = "0/0";
                 return;
             }
-            NumberOfPagesSearch = (int)Math.Ceiling(((float)currentList.total) / maxperpage);
+            NumberOfPagesSearch = (int)Math.Ceiling(((float)currentMangaList.Count) / maxperpage);
             MangaListPageCounter.Content = (listPage + 1).ToString() + "/" + NumberOfPagesSearch.ToString();
 
-            foreach (MangaResponse manga in currentList.results)
+            for (int i = listPage * maxperpage; i < (listPage + 1) * maxperpage && i < currentMangaList.Count; i++)
             {
-                string bufout = null;
-                manga.data.attributes.title.TryGetValue("en", out bufout);
+                currentMangaList[i].data.attributes.title.TryGetValue("en", out string bufout);
                 if (bufout != null)
                 {
                     bufout = WebUtility.HtmlDecode(bufout);
@@ -143,46 +167,68 @@ namespace MangaDexReader
 
         public void GetCurrentChapterList()
         {
-            HttpWebRequest webRequest = WebRequest.CreateHttp(String.Format("{0}manga/{1}/feed?locales[0]=en&limit={2}&offset={3}", new string[] { ConfigurationManager.AppSettings.Get("API_URL"), currentManga.id, maxChapPerPage.ToString(), (maxChapPerPage * currentChapterPage).ToString() }));
-            if (webRequest == null)
-            {
-                return;
-            }
 
-            webRequest.ContentType = "application/json";
-            webRequest.UserAgent = "Nothing";
+            currentChapters = new List<ChapterResponse>();
 
-            using (var s = webRequest.GetResponse().GetResponseStream())
+            int limit = 500;
+
+            int total = limit;
+            int current = 0;
+
+            string reqQuery;
+            ChapterResponses chapterResponses;
+            HttpWebRequest webRequest;
+
+            while (current < total)
             {
-                using (var sr = new StreamReader(s))
+                reqQuery = String.Format("{0}manga/{1}/feed?locales[]=en&limit={2}&offset={3}", ConfigurationManager.AppSettings.Get("API_URL"), currentManga.id, limit, current);
+
+                webRequest = WebRequest.CreateHttp(reqQuery);
+                if (webRequest == null)
                 {
-                    var responseJSON = sr.ReadToEnd();
-                    currentChapters = JsonConvert.DeserializeObject<ChapterResponses>(responseJSON);
+                    return;
                 }
+                webRequest.ContentType = "application/json";
+                webRequest.UserAgent = "Nothing";
+
+                using (Stream s = webRequest.GetResponse().GetResponseStream())
+                {
+                    using (StreamReader sr = new StreamReader(s))
+                    {
+                        string responseJSON = sr.ReadToEnd();
+                        chapterResponses = JsonConvert.DeserializeObject<ChapterResponses>(responseJSON);
+                    }
+                }
+
+                currentChapters.AddRange(chapterResponses.results);
+
+                total = chapterResponses.total;
+                current += (limit < total - current) ? limit : (total - current);
+                this.Invoke(() => UpdateBar(current, total));
             }
+
+            currentChapters.Sort((x,y)=> (int)(10000 * ((x.data.attributes.volume.HasValue && y.data.attributes.volume.HasValue)?(x.data.attributes.volume - y.data.attributes.volume):0) + 100*(float.Parse(x.data.attributes.chapter) - float.Parse(y.data.attributes.chapter))));
+
+            this.Invoke(EndOfGet);
+            this.Invoke(UpdateChapterListUI);
+        }
+
+        public void UpdateChapterListUI()
+        {
             CurrentChaptersListBox.Items.Clear();
-            NumberOfPagesChapters = (int)Math.Ceiling(((float)currentChapters.total) / maxChapPerPage);
+            NumberOfPagesChapters = (int)Math.Ceiling(((float)currentChapters.Count) / maxChapPerPage);
             CurrentMangaChapterCounter.Content = (currentChapterPage + 1).ToString() + "/" + NumberOfPagesChapters.ToString();
             if (currentChapters != null)
             {
-                foreach (ChapterResponse chapter in currentChapters.results)
+                for(int i=currentChapterPage*maxChapPerPage; i<(currentChapterPage+1)*maxChapPerPage && i<currentChapters.Count; i++)
                 {
-                    if (chapter.data.attributes.title != "")
-                    {
-                        string title = WebUtility.HtmlDecode(chapter.data.attributes.title);
-                        if (chapter.data.attributes.chapter != "")
-                        {
-                            CurrentChaptersListBox.Items.Add(String.Format("Chapter {0}: {1}", new string[] { chapter.data.attributes.chapter,  title}));
-                        }
-                        else
-                        {
-                            CurrentChaptersListBox.Items.Add(title);
-                        }
-                    }
-                    else
-                    {
-                        CurrentChaptersListBox.Items.Add(String.Format("Chapter {0}", new string[] { chapter.data.attributes.chapter }));
-                    }
+                    ChapterResponse chapter = currentChapters[i];
+                    string title = WebUtility.HtmlDecode(chapter.data.attributes.title);
+                    string buf="";
+                    if (chapter.data.attributes.volume != null) buf = "Volume " + chapter.data.attributes.volume;
+                    if (chapter.data.attributes.chapter != "") buf = (buf != "")?(buf+", Chapter "+ chapter.data.attributes.chapter) : ("Chapter " + chapter.data.attributes.chapter);
+                    if (chapter.data.attributes.title != "") buf = (buf != "") ? (buf + ": " + title) : title;
+                    CurrentChaptersListBox.Items.Add(buf);
                 }
             }
         }
@@ -190,13 +236,15 @@ namespace MangaDexReader
         private void CurrentMangaListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (CurrentMangaListBox.SelectedIndex == -1) return;
-            currentManga = currentList.results[CurrentMangaListBox.SelectedIndex].data;
-            string bufout = null;
-            currentManga.attributes.title.TryGetValue("en", out bufout);
+            currentManga = currentMangaList[listPage*maxperpage+CurrentMangaListBox.SelectedIndex].data;
+            currentManga.attributes.title.TryGetValue("en", out string bufout);
             CurrentMangaTitle.Content = "Title (En): " + bufout;
             currentChapterPage = 0;
 
-            GetCurrentChapterList();
+            progressWindow.Show();
+            progressWindow.ProgressBar.Value = 0;
+            progressWindow.ProgressCounter.Content = "Beginning";
+            new Task(GetCurrentChapterList).Start();
         }
 
         private void CurrentChaptersListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -207,7 +255,7 @@ namespace MangaDexReader
                 MaxPageCounter.Content = "0/0";
                 return;
             };
-            currentChapter = currentChapters.results[CurrentChaptersListBox.SelectedIndex].data;
+            currentChapter = currentChapters[CurrentChaptersListBox.SelectedIndex].data;
             currentPage = 0;
 
             HttpWebRequest webRequest = WebRequest.CreateHttp(ConfigurationManager.AppSettings.Get("API_URL") + "at-home/server/" + currentChapter.id);
@@ -228,28 +276,38 @@ namespace MangaDexReader
                 }
             }
 
-            GetPage(0);
+            GetPages();
             MaxPageCounter.Content = "1/" + currentChapter.attributes.data.Length;
+            PageViewer.Source = pageList[0];
+            NextButton.Focus();
         }
 
-        private void GetPage(int num)
+        public void GetPages()
         {
-            BitmapImage bi3 = new BitmapImage();
-            bi3.BeginInit();
-            bi3.UriSource = new Uri(String.Format("{0}/data/{1}/{2}", new string[] { currentATHOME.baseUrl, currentChapter.attributes.hash, currentChapter.attributes.data[num] }), UriKind.RelativeOrAbsolute);
-            bi3.CacheOption = BitmapCacheOption.OnLoad;
-            bi3.EndInit();
-            PageViewer.Source = bi3;
+            if (currentChapter == null) return;
+            BitmapImage bi3;
+            pageList = new List<BitmapImage>();
+            foreach(string imageLink in currentChapter.attributes.data)
+            {
+                bi3 = new BitmapImage();
+                bi3.BeginInit();
+                bi3.UriSource = new Uri(String.Format("{0}/data/{1}/{2}", new string[] { currentATHOME.baseUrl, currentChapter.attributes.hash, imageLink }), UriKind.RelativeOrAbsolute);
+                bi3.CacheOption = BitmapCacheOption.OnLoad;
+                bi3.EndInit();
+                pageList.Add(bi3);
+            }
         }
 
         private void NextPage_Click(object sender, RoutedEventArgs e)
         {
-            if(currentPage < currentChapter.attributes.data.Length-1)
+            if (pageList == null || pageList.Count == 0) return;
+
+            if (currentPage < currentChapter.attributes.data.Length-1)
             {
                 currentPage++;
-                GetPage(currentPage);
+                PageViewer.Source = pageList[currentPage];
             }
-            else if (CurrentChaptersListBox.SelectedIndex < currentChapters.total - 1)
+            else if (CurrentChaptersListBox.SelectedIndex < currentChapters.Count - 1)
             {
                 CurrentChaptersListBox.SelectedIndex += 1;
             }
@@ -258,16 +316,18 @@ namespace MangaDexReader
 
         private void PrevPage_Click(object sender, RoutedEventArgs e)
         {
+            if (pageList == null || pageList.Count == 0) return;
+
             if (currentPage > 0)
             {
                 currentPage--;
-                GetPage(currentPage);
+                PageViewer.Source = pageList[currentPage];
             }
             else if (CurrentChaptersListBox.SelectedIndex > 0)
             {
                 CurrentChaptersListBox.SelectedIndex -= 1;
                 currentPage = currentChapter.attributes.data.Length - 1;
-                GetPage(currentPage);
+                PageViewer.Source = pageList[currentPage];
             }
             MaxPageCounter.Content = (currentPage + 1).ToString() + "/" + currentChapter.attributes.data.Length;
         }
@@ -285,7 +345,11 @@ namespace MangaDexReader
             else if(e.Key == Key.Enter)
             {
                 listPage = 0;
-                GetMangaList(SearchBox.Text);
+                string search = SearchBox.Text;
+                progressWindow.Show();
+                progressWindow.ProgressBar.Value = 0;
+                progressWindow.ProgressCounter.Content = "Beginning";
+                new Task(()=>GetMangaList(search)).Start();
             }
         }
 
@@ -294,15 +358,7 @@ namespace MangaDexReader
             if(listPage < NumberOfPagesSearch - 1)
             {
                 listPage++;
-                if (isUserFeed)
-                {
-                    int a = 0;
-                    GetUserFeed();
-                }
-                else
-                {
-                    GetMangaList(SearchBox.Text);
-                }
+                UpdateListUI();
             }
         }
 
@@ -311,14 +367,7 @@ namespace MangaDexReader
             if (listPage > 0)
             {
                 listPage--;
-                if (isUserFeed)
-                {
-                    GetUserFeed();
-                }
-                else
-                {
-                    GetMangaList(SearchBox.Text);
-                }
+                UpdateListUI();
             }
         }
 
@@ -327,7 +376,7 @@ namespace MangaDexReader
             if (currentChapterPage > 0)
             {
                 currentChapterPage--;
-                GetCurrentChapterList();
+                UpdateChapterListUI();
             }
         }
 
@@ -336,7 +385,7 @@ namespace MangaDexReader
             if (currentChapterPage < NumberOfPagesChapters-1)
             {
                 currentChapterPage++;
-                GetCurrentChapterList();
+                UpdateChapterListUI();
             }
         }
 
@@ -368,7 +417,7 @@ namespace MangaDexReader
             }
             else
             {
-                child.Show();
+                loginChild.Show();
             }
         }
 
@@ -423,61 +472,90 @@ namespace MangaDexReader
 
         private void MainWindow_Closed(object sender, EventArgs e)
         {
-            child.Close();
+            loginChild.Close();
+            progressWindow.Close();
         }
 
         private void GetUserFeedButton_Click(object sender, RoutedEventArgs e)
         {
             currentPage = 0;
-            GetUserFeed();
+            progressWindow.Show();
+            progressWindow.ProgressBar.Value = 0;
+            progressWindow.ProgressCounter.Content = "Beginning";
+            new Task(GetUserFeed).Start();
         }
 
         public void GetUserFeed()
         {
             if (!isLoggedIn) return;
             isUserFeed = true;
-            HttpWebRequest webRequest = WebRequest.CreateHttp(String.Format("{0}user/follows/manga/feed?limit={1}&offset={2}&locales[]=en", ConfigurationManager.AppSettings.Get("API_URL"), maxperpage, maxperpage * listPage));
-            if (webRequest == null)
-            {
-                return;
-            }
-            webRequest.ContentType = "application/json";
-            webRequest.UserAgent = "Nothing";
-            webRequest.Headers.Add(HttpRequestHeader.Authorization, "Bearer " + currentToken.session);
 
+            currentMangaList = new List<MangaResponse>();
+
+            int limit = 100;
+
+            int total = limit;
+            int current = 0;
+
+            string reqQuery;
+            List<string> mangaIDs;
+            string mangaID;
             ChapterResponses chapterResponses;
+            HttpWebRequest webRequest;
 
-            using (Stream s = webRequest.GetResponse().GetResponseStream())
+            while (current < total)
             {
-                using (StreamReader sr = new StreamReader(s))
+                reqQuery = ConfigurationManager.AppSettings.Get("API_URL") + String.Format("user/follows/manga/feed?locales[]=en&limit={0}&offset={1}", limit, current);
+                webRequest = WebRequest.CreateHttp(reqQuery);
+                if (webRequest == null)
                 {
-                    string responseJSON = sr.ReadToEnd();
-                    chapterResponses = JsonConvert.DeserializeObject<ChapterResponses>(responseJSON);
+                    return;
                 }
-            }
+                webRequest.ContentType = "application/json";
+                webRequest.UserAgent = "Nothing";
 
-            List<string> mangaIDs = new List<string>();
+                webRequest.Headers.Add(HttpRequestHeader.Authorization, "Bearer " + currentToken.session);
 
-            foreach (ChapterResponse chap in chapterResponses.results)
-            {
-                string mangaID = "";
-                foreach (Relationship rel in chap.relationships)
+                using (Stream s = webRequest.GetResponse().GetResponseStream())
                 {
-                    if (rel.type == "manga") mangaID = rel.id;
+                    using (StreamReader sr = new StreamReader(s))
+                    {
+                        string responseJSON = sr.ReadToEnd();
+                        chapterResponses = JsonConvert.DeserializeObject<ChapterResponses>(responseJSON);
+                    }
                 }
-                mangaIDs.Add(mangaID);
+
+                mangaIDs = new List<string>();
+
+                foreach (ChapterResponse chap in chapterResponses.results)
+                {
+                    mangaID = "";
+                    foreach (Relationship rel in chap.relationships)
+                    {
+                        if (rel.type == "manga") mangaID = rel.id;
+                    }
+                    mangaIDs.Add(mangaID);
+                }
+
+                foreach (MangaResponse manga in GetMangaFromIDs(mangaIDs)) if (!currentMangaList.Exists(new Predicate<MangaResponse>(x => x.data.attributes.title["en"] == manga.data.attributes.title["en"]))) currentMangaList.Add(manga);
+
+                total = chapterResponses.total;
+                current += (limit < total - current) ? limit : (total - current);
+                this.Invoke(() => UpdateBar(current, total));
             }
+            this.Invoke(EndOfGet);
+        }
 
-            MangaResponses temp = new MangaResponses
-            {
-                total = chapterResponses.total,
-                limit = chapterResponses.limit,
-                offset = chapterResponses.offset,
-                results = GetMangaFromIDs(mangaIDs)
-            };
+        public void UpdateBar(int current, int total)
+        {
+            progressWindow.ProgressBar.Maximum = total;
+            progressWindow.ProgressBar.Value = current;
+            progressWindow.ProgressCounter.Content = current + "/" + total;
+        }
 
-            currentList = temp;
-
+        public void EndOfGet()
+        {
+            progressWindow.Hide();
             UpdateListUI();
         }
 
@@ -489,30 +567,6 @@ namespace MangaDexReader
         private void TokenExpired_Elasped(object sender, ElapsedEventArgs e)
         {
             isJWTokenExpired = false;
-        }
-
-        public MangaResponse GetMangaFromID(string id)
-        {
-            HttpWebRequest webRequest = WebRequest.CreateHttp(String.Format("{0}manga/{1}", ConfigurationManager.AppSettings.Get("API_URL"), id));
-            if (webRequest == null)
-            {
-                return new MangaResponse();
-            }
-            webRequest.ContentType = "application/json";
-            webRequest.UserAgent = "Nothing";
-
-            MangaResponse mangaResponse;
-
-            using (Stream s = webRequest.GetResponse().GetResponseStream())
-            {
-                using (StreamReader sr = new StreamReader(s))
-                {
-                    string responseJSON = sr.ReadToEnd();
-                    mangaResponse = JsonConvert.DeserializeObject<MangaResponse>(responseJSON);
-                }
-            }
-
-            return mangaResponse;
         }
 
         public List<MangaResponse> GetMangaFromIDs(List<string> ids)

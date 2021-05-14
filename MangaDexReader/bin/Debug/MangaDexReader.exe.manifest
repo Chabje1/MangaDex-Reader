@@ -450,14 +450,14 @@
     </dependentAssembly>
   </dependency>
   <dependency>
-    <dependentAssembly dependencyType="install" allowDelayedBinding="true" codebase="MangaDexReader.exe" size="33768">
+    <dependentAssembly dependencyType="install" allowDelayedBinding="true" codebase="MangaDexReader.exe" size="38888">
       <assemblyIdentity name="MangaDexReader" version="1.0.0.0" language="neutral" processorArchitecture="msil" />
       <hash>
         <dsig:Transforms>
           <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
         </dsig:Transforms>
         <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" />
-        <dsig:DigestValue>uH9IHIXcLtfTb0m9EumLLOrD8Ay+Hg7vRDQpxB8Lsak=</dsig:DigestValue>
+        <dsig:DigestValue>cs0pIUWMtr0mfm4oq2WMzX7j419E/iRg0/yYLcK0ZbU=</dsig:DigestValue>
       </hash>
     </dependentAssembly>
   </dependency>

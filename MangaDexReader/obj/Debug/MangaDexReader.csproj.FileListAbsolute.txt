@@ -125,3 +125,5 @@ C:\Users\Jerome\source\repos\MangaDexReader\MangaDexReader\bin\Debug\MangaDexRea
 C:\Users\Jerome\source\repos\MangaDexReader\MangaDexReader\bin\Debug\MangaDexReader.application
 C:\Users\Jerome\source\repos\MangaDexReader\MangaDexReader\obj\Debug\MangaDexReader.exe.manifest
 C:\Users\Jerome\source\repos\MangaDexReader\MangaDexReader\obj\Debug\MangaDexReader.application
+C:\Users\Jerome\source\repos\MangaDexReader\MangaDexReader\obj\Debug\ProgressWindow.g.cs
+C:\Users\Jerome\source\repos\MangaDexReader\MangaDexReader\obj\Debug\ProgressWindow.baml

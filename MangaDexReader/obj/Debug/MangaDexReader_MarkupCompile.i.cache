@@ -10,11 +10,11 @@ none
 false
 DEBUG;TRACE
 C:\Users\Jerome\source\repos\MangaDexReader\MangaDexReader\App.xaml
-22037783069
+3441513750
 
-13-1696261814
+14-2034267229
 52653469284
-LoginWindow.xaml;MainWindow.xaml;
+LoginWindow.xaml;MainWindow.xaml;ProgressWindow.xaml;
 
-False
+True
 
